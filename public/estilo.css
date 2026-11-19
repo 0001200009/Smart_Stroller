@@ -1,0 +1,120 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+body { background-color: #f8f9fa; color: #333; padding-top: 90px; padding-bottom: 100px; }
+
+/* Cabeçalho Fixo */
+.top-nav { 
+    background-color: #ffffff; 
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+    height: 80px; 
+    position: fixed; 
+    top: 0; 
+    width: 100%; 
+    z-index: 1000; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    padding: 0 5%; 
+}
+.top-nav h1 { color: #2081c3; font-size: 24px; }
+.top-nav nav a { 
+    color: #555; 
+    text-decoration: none; 
+    margin-left: 25px; 
+    font-weight: 600; 
+    font-size: 15px;
+    transition: color 0.3s; 
+}
+.top-nav nav a:hover { color: #2081c3; }
+
+/* Corpo Principal */
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+
+.welcome-title { font-size: 24px; color: #333; margin-bottom: 30px; border-bottom: 2px solid #e9ecef; padding-bottom: 15px; }
+
+/* Cartões de Produtos */
+.product-item { 
+    background: #ffffff; 
+    border-radius: 12px; 
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04); 
+    display: flex; 
+    align-items: center; 
+    padding: 20px; 
+    margin-bottom: 15px; 
+    border: 1px solid #f0f0f0;
+    transition: transform 0.2s, box-shadow 0.2s; 
+}
+.product-item:hover { 
+    transform: translateY(-2px); 
+    box-shadow: 0 6px 15px rgba(0,0,0,0.08); 
+}
+.product-item img { 
+    width: 90px; 
+    height: 90px; 
+    object-fit: contain; 
+    border-radius: 8px; 
+    margin-right: 25px; 
+    background: #fff;
+}
+
+.product-info { flex-grow: 1; }
+.product-info h2 { font-size: 18px; color: #222; margin-bottom: 6px; }
+.product-info p { font-size: 14px; color: #777; margin-bottom: 10px; }
+.price { font-weight: 700; color: #28a745; font-size: 16px; }
+
+/* Botões de Adicionar/Remover */
+.product-actions { 
+    display: flex; 
+    align-items: center; 
+    background: #f8f9fa; 
+    border-radius: 8px; 
+    padding: 6px; 
+    border: 1px solid #e9ecef;
+}
+.btn-qty { 
+    background: #ffffff; 
+    border: 1px solid #dee2e6; 
+    color: #495057; 
+    width: 36px; 
+    height: 36px; 
+    border-radius: 6px; 
+    cursor: pointer; 
+    font-size: 20px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    transition: all 0.2s; 
+}
+.btn-qty:hover { background: #e2e6ea; }
+.qty { width: 45px; text-align: center; font-weight: 600; font-size: 16px; color: #333; }
+
+/* Rodapé Fixo com Total */
+.bottom-bar { 
+    background-color: #ffffff; 
+    border-top: 1px solid #e9ecef; 
+    position: fixed; 
+    bottom: 0; 
+    width: 100%; 
+    padding: 20px 5%; 
+    display: flex; 
+    justify-content: flex-end; 
+    align-items: center; 
+    box-shadow: 0 -2px 15px rgba(0,0,0,0.05); 
+}
+.bottom-bar h3 { margin-right: 30px; font-size: 20px; color: #444; font-weight: 600; }
+.bottom-bar h3 span { color: #2081c3; font-weight: 700; }
+
+.btn-finish { 
+    background-color: #2081c3; 
+    color: white; 
+    text-decoration: none; 
+    padding: 14px 28px; 
+    border-radius: 8px; 
+    font-size: 16px; 
+    font-weight: 600; 
+    transition: background 0.3s; 
+}
+.btn-finish:hover { background-color: #2081c3; }
+
