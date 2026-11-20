@@ -25,4 +25,9 @@ class Produtos extends Model
         'status',
         'data_remocao',
     ];
+
+    public function categoria()
+    {
+        return $this->belongsTo(Categorias::class, 'id_categoria', 'id_categoria');
+    }
 }

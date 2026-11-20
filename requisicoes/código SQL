@@ -1,5 +1,5 @@
 DROP DATABASE IF EXISTS smart_stroller;
-CREATE DATABASE smart_stroller;
+CREATE DATABASE smart_stroller CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE smart_stroller;
 
 /* =========================
@@ -9,7 +9,7 @@ USE smart_stroller;
 CREATE TABLE smart_stroller (
     id_stroller INT PRIMARY KEY AUTO_INCREMENT,
     numero_identificacao VARCHAR(50) UNIQUE NOT NULL,
-    nivel_bateria INT,
+    nivel_bateria INT DEFAULT 100,
     status ENUM(
         'Disponivel',
         'Em Uso',
@@ -17,9 +17,9 @@ CREATE TABLE smart_stroller (
         'Manutencao'
     ) DEFAULT 'Disponivel',
     ultima_sincronizacao DATETIME,
-    data_criacao DATETIME,
+    data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP,
     data_remocao DATETIME,
-    data_atualizacao DATETIME 
+    data_atualizacao DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 INSERT INTO smart_stroller (numero_identificacao, nivel_bateria, status, ultima_sincronizacao, data_criacao, data_atualizacao)
@@ -28,12 +28,11 @@ VALUES ('STROLLER-01', 100, 'Disponivel', NOW(), NOW(), NOW());
 /* =========================
    USUARIOS
    ========================= */
-   
 
 CREATE TABLE usuarios (
     id_usuario INT PRIMARY KEY AUTO_INCREMENT,
     nome VARCHAR(100) NOT NULL,
-    email VARCHAR(150) UNIQUE, -- Adicionado para identificar unicamente o cliente
+    email VARCHAR(150) UNIQUE,
     cpf VARCHAR(100) UNIQUE,
     telefone VARCHAR(20),
     data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -41,17 +40,20 @@ CREATE TABLE usuarios (
     data_remocao DATETIME
 );
 
+INSERT INTO usuarios (nome, email, cpf, telefone, data_criacao) VALUES
+('Alefe Henrique', 'alefe@aggly.com.br', '123.456.789-00', '(11) 98765-4321', NOW()),
+('Yasmim de Souza', 'yasmim@aggly.com.br', '987.654.321-00', '(11) 91234-5678', NOW());
+
 /* =========================
    CATEGORIAS
    ========================= */
-   
 
 CREATE TABLE categorias (
     id_categoria INT PRIMARY KEY AUTO_INCREMENT,
     nome VARCHAR(100) NOT NULL UNIQUE,
-     data_criacao DATETIME,
+    data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP,
     data_remocao DATETIME,
-    data_atualizacao DATETIME 
+    data_atualizacao DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 INSERT INTO categorias (nome) VALUES
@@ -65,11 +67,10 @@ INSERT INTO categorias (nome) VALUES
 /* =========================
    PRODUTOS
    ========================= */
-   
 
 CREATE TABLE produtos (
     id_produto INT PRIMARY KEY AUTO_INCREMENT,
-    codigo_rfid VARCHAR(100) UNIQUE, -- Perfeito para leitura do Arduino
+    codigo_rfid VARCHAR(100) UNIQUE,
     codigo_barras VARCHAR(50) UNIQUE,
     nome VARCHAR(150) NOT NULL,
     preco DECIMAL(10,2) NOT NULL,
@@ -80,7 +81,7 @@ CREATE TABLE produtos (
     data_atualizacao DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     data_remocao DATETIME,
 
-    FOREIGN KEY (id_categoria) REFERENCES categorias(id_categoria)
+    FOREIGN KEY (id_categoria) REFERENCES categorias(id_categoria) ON DELETE SET NULL
 );
 
 INSERT INTO produtos (codigo_rfid, codigo_barras, nome, preco, estoque, id_categoria, status, data_criacao, data_atualizacao) VALUES
@@ -121,14 +122,13 @@ CREATE TABLE compras (
     data_atualizacao DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     data_remocao DATETIME,
 
-    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario),
-    FOREIGN KEY (id_stroller) REFERENCES smart_stroller(id_stroller)
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    FOREIGN KEY (id_stroller) REFERENCES smart_stroller(id_stroller) ON DELETE CASCADE
 );
 
 /* =========================
    ITENS DA COMPRA
    ========================= */
-   
 
 CREATE TABLE itens_compra (
     id_item INT PRIMARY KEY AUTO_INCREMENT,
@@ -141,15 +141,14 @@ CREATE TABLE itens_compra (
     data_atualizacao DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     data_remocao DATETIME,
 
-    -- Cascade impede o erro 1451 se a compra for deletada
+    -- Cascade impede o erro 1451 se a compra ou produto for deletado
     FOREIGN KEY (id_compra) REFERENCES compras(id_compra) ON DELETE CASCADE, 
-    FOREIGN KEY (id_produto) REFERENCES produtos(id_produto)
+    FOREIGN KEY (id_produto) REFERENCES produtos(id_produto) ON DELETE CASCADE
 );
 
 /* =========================
    PAGAMENTOS
    ========================= */
-   
 
 CREATE TABLE pagamentos (
     id_pagamento INT PRIMARY KEY AUTO_INCREMENT,
@@ -171,30 +170,27 @@ CREATE TABLE pagamentos (
     ) DEFAULT 'Pendente',
 
     data_pagamento DATETIME,
-     data_criacao DATETIME,
+    data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP,
     data_remocao DATETIME,
-    data_atualizacao DATETIME ,
+    data_atualizacao DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (id_compra)
-        REFERENCES compras(id_compra)
+    FOREIGN KEY (id_compra) REFERENCES compras(id_compra) ON DELETE CASCADE
 );
 
 /* =========================
    HISTORICO DE USO
    ========================= */
-   
 
 CREATE TABLE historico_uso (
     id_uso INT PRIMARY KEY AUTO_INCREMENT,
     id_stroller INT,
     descricao VARCHAR(255),
     data_uso DATETIME DEFAULT CURRENT_TIMESTAMP,
-     data_criacao DATETIME,
+    data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP,
     data_remocao DATETIME,
-    data_atualizacao DATETIME,
+    data_atualizacao DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (id_stroller)
-        REFERENCES smart_stroller(id_stroller)
+    FOREIGN KEY (id_stroller) REFERENCES smart_stroller(id_stroller) ON DELETE SET NULL
 );
 
 /* =========================
@@ -207,19 +203,45 @@ CREATE TABLE leituras_rfid (
     id_stroller INT NOT NULL,
     id_produto INT NOT NULL,
 
-    data_criacao DATETIME,
-    data_remocao DATETIME,
-    data_atualizacao DATETIME,
-
     acao ENUM('Entrada','Saida') NOT NULL,
-
     data_leitura DATETIME DEFAULT CURRENT_TIMESTAMP,
+    data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP,
+    data_remocao DATETIME,
+    data_atualizacao DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (id_stroller)
-        REFERENCES smart_stroller(id_stroller),
+    FOREIGN KEY (id_stroller) REFERENCES smart_stroller(id_stroller) ON DELETE CASCADE,
+    FOREIGN KEY (id_produto) REFERENCES produtos(id_produto) ON DELETE CASCADE
+);
 
-    FOREIGN KEY (id_produto)
-        REFERENCES produtos(id_produto)
+/* =========================
+   SESSOES (LARAVEL)
+   ========================= */
+
+CREATE TABLE IF NOT EXISTS sessions (
+    id VARCHAR(255) PRIMARY KEY,
+    user_id BIGINT UNSIGNED NULL,
+    ip_address VARCHAR(45) NULL,
+    user_agent TEXT NULL,
+    payload LONGTEXT NOT NULL,
+    last_activity INT NOT NULL,
+    INDEX sessions_user_id_index (user_id),
+    INDEX sessions_last_activity_index (last_activity)
+);
+
+/* =========================
+   CACHE (LARAVEL)
+   ========================= */
+
+CREATE TABLE IF NOT EXISTS cache (
+    `key` VARCHAR(255) PRIMARY KEY,
+    `value` MEDIUMTEXT NOT NULL,
+    `expiration` INT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS cache_locks (
+    `key` VARCHAR(255) PRIMARY KEY,
+    `owner` VARCHAR(255) NOT NULL,
+    `expiration` INT NOT NULL
 );
 
 SET FOREIGN_KEY_CHECKS = 0;

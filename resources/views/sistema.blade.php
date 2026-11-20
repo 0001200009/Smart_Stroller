@@ -6,6 +6,7 @@
     <title>Smart Stroller - Identificação do Cliente</title>
 
     <style>
+        /* Corrigido de "-" para "*" */
         * {
             margin: 0;
             padding: 0;
@@ -304,6 +305,7 @@
                 </svg>
                 Já sou cadastrado
             </button>
+            
             <button type="button" 
                     class="tab-btn {{ $abaPadrao === 'cadastro' ? 'active' : '' }}" 
                     id="btn-tab-cadastro" 
@@ -316,6 +318,17 @@
                 </svg>
                 Primeiro acesso
             </button>
+            
+            <button type="button" 
+                    class="tab-btn {{ $abaPadrao === 'admin' ? 'active' : '' }}" 
+                    id="btn-tab-admin" 
+                    onclick="alternarAba('admin')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                Admin
+            </button>
         </div>
 
         <!-- ==============================================
@@ -325,6 +338,7 @@
             <form action="/compra/iniciar" method="POST">
                 @csrf
                 <input type="hidden" name="tipo_acesso" value="login">
+                <input type="hidden" name="id_stroller" value="{{ request('stroller_id', 1) }}">
 
                 <div class="input-group">
                     <label for="login_nome">Nome cadastrado</label>
@@ -367,6 +381,7 @@
             <form action="/compra/iniciar" method="POST">
                 @csrf
                 <input type="hidden" name="tipo_acesso" value="cadastro">
+                <input type="hidden" name="id_stroller" value="{{ request('stroller_id', 1) }}">
 
                 <div class="input-group">
                     <label for="cad_nome">Qual é o seu nome completo?</label>
@@ -430,6 +445,34 @@
             </form>
         </div>
 
+        <!-- ==============================================
+             ABA 3: LOGIN DO ADMINISTRADOR
+             ============================================== -->
+        <div id="pane-admin" class="form-pane {{ $abaPadrao === 'admin' ? 'active' : '' }}">
+            <form action="/login" method="POST">
+                @csrf
+                
+                <div class="input-group">
+                    <label for="admin_login">Login</label>
+                    <input type="text" id="admin_login" name="login" placeholder="admin" required>
+                </div>
+                
+                <!-- Adicionado o campo de senha que estava faltando -->
+                <div class="input-group">
+                    <label for="admin_senha">Senha</label>
+                    <input type="password" id="admin_senha" name="senha" placeholder="******" required>
+                </div>
+                
+                <button type="submit" class="btn-submit">
+                    <span>Acessar Admin</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </button>
+            </form>
+        </div>
+
     </div>
 
     <!-- Scripts de Interatividade e Máscaras -->
@@ -438,10 +481,12 @@
             // Atualiza botões
             document.getElementById('btn-tab-login').classList.toggle('active', tipo === 'login');
             document.getElementById('btn-tab-cadastro').classList.toggle('active', tipo === 'cadastro');
+            document.getElementById('btn-tab-admin').classList.toggle('active', tipo === 'admin');
 
             // Atualiza formulários
             document.getElementById('pane-login').classList.toggle('active', tipo === 'login');
             document.getElementById('pane-cadastro').classList.toggle('active', tipo === 'cadastro');
+            document.getElementById('pane-admin').classList.toggle('active', tipo === 'admin');
         }
 
         // Máscara de CPF automática (000.000.000-00)

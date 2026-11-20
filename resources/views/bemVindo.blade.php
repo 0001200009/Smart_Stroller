@@ -109,7 +109,7 @@ p{
         </svg>
     </div>
 </div>
-<a href="/login" class="btn-admin">Entrar como Administrador</a>
+
 
 <script>
 document.addEventListener("click", (e) => {

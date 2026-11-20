@@ -14,15 +14,20 @@ class Compras extends Model
 
     const CREATED_AT = 'data_criacao';
     const UPDATED_AT = 'data_atualizacao';
-
     protected $fillable = [
         'id_usuario',
         'id_stroller',
         'valor_total',
         'status',
         'data_inicio',
-        'data_fim'
+        'data_fim',
     ];
+
+    protected $casts = [
+        'data_inicio' => 'datetime',
+        'data_fim' => 'datetime',
+    ];
+
 
     /**
      * Relacionamento 1 para N: Uma compra possui vários itens

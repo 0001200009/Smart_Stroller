@@ -16,6 +16,7 @@ class CheckoutController extends Controller
     public function iniciarCompra(Request $request)
     {
         $tipoAcesso = $request->input('tipo_acesso', 'login');
+        $idStroller = (int) $request->input('id_stroller', $request->query('stroller_id', 1));
 
         if ($tipoAcesso === 'login') {
             // Cliente já cadastrado: Nome e CPF
@@ -31,7 +32,7 @@ class CheckoutController extends Controller
             $nomeDigitado = trim($request->nome);
 
             // Busca o cliente pelo CPF (com ou sem formatação)
-            $usuario = Usuarios::where(function($q) use ($request, $cpfLimpo) {
+            $usuario = Usuarios::where(function ($q) use ($request, $cpfLimpo) {
                 $q->where('cpf', $request->cpf);
                 if (!empty($cpfLimpo)) {
                     $q->orWhere('cpf', $cpfLimpo);
@@ -42,20 +43,21 @@ class CheckoutController extends Controller
                 return redirect()->back()
                     ->withInput()
                     ->with('aba_ativa', 'login')
-                    ->with('erro', 'CPF não encontrado. Caso ainda não tenha cadastro, acesse a aba "Novo Cliente".');
+                    ->with('erro', 'CPF não encontrado. Caso ainda não tenha cadastro, acesse a aba "Primeiro acesso".');
             }
 
             // Verifica se o nome confere de forma flexível (case-insensitive)
             $nomeCadastrado = trim($usuario->nome);
-            if (mb_strtolower($nomeCadastrado, 'UTF-8') !== mb_strtolower($nomeDigitado, 'UTF-8') &&
+            if (
+                mb_strtolower($nomeCadastrado, 'UTF-8') !== mb_strtolower($nomeDigitado, 'UTF-8') &&
                 stripos($nomeCadastrado, $nomeDigitado) === false &&
-                stripos($nomeDigitado, $nomeCadastrado) === false) {
+                stripos($nomeDigitado, $nomeCadastrado) === false
+            ) {
                 return redirect()->back()
                     ->withInput()
                     ->with('aba_ativa', 'login')
                     ->with('erro', "O nome informado não confere com o CPF cadastrado. (Cadastrado como: {$usuario->nome})");
             }
-
         } else {
             // Novo cliente: Nome e CPF obrigatórios, E-mail e Telefone opcionais
             $request->validate([
@@ -72,7 +74,7 @@ class CheckoutController extends Controller
             $cpfLimpo = preg_replace('/[^0-9]/', '', $request->cpf);
 
             // Verifica se o CPF já está cadastrado
-            $existente = Usuarios::where(function($q) use ($request, $cpfLimpo) {
+            $existente = Usuarios::where(function ($q) use ($request, $cpfLimpo) {
                 $q->where('cpf', $request->cpf);
                 if (!empty($cpfLimpo)) {
                     $q->orWhere('cpf', $cpfLimpo);
@@ -83,7 +85,7 @@ class CheckoutController extends Controller
                 return redirect()->back()
                     ->withInput()
                     ->with('aba_ativa', 'login')
-                    ->with('erro', 'Este CPF já está cadastrado! Você pode entrar diretamente pela aba "Já sou cliente".');
+                    ->with('erro', 'Este CPF já está cadastrado! Você pode entrar diretamente pela aba "Já sou cadastrado".');
             }
 
             // Cadastra o novo usuário
@@ -95,15 +97,21 @@ class CheckoutController extends Controller
             ]);
         }
 
-        // Garante a existência do carrinho padrão ID 1
+        // Garante a existência do carrinho correspondente
         $stroller = SmartStroller::firstOrCreate(
-            ['id_stroller' => 1],
+            ['id_stroller' => $idStroller],
             [
-                'numero_identificacao' => 'STROLLER-01',
+                'numero_identificacao' => 'STROLLER-' . str_pad($idStroller, 2, '0', STR_PAD_LEFT),
                 'nivel_bateria'        => 100,
-                'status'               => 'Disponivel'
+                'status'               => 'Em Uso',
+                'ultima_sincronizacao' => now(),
             ]
         );
+
+        $stroller->update([
+            'status'               => 'Em Uso',
+            'ultima_sincronizacao' => now(),
+        ]);
 
         // Cria a nova compra
         $compra = Compras::create([
@@ -117,7 +125,8 @@ class CheckoutController extends Controller
         // Grava as informações na sessão do navegador
         session([
             'id_compra'     => $compra->id_compra,
-            'nomeComprador' => $usuario->nome
+            'nomeComprador' => $usuario->nome,
+            'id_stroller'   => $stroller->id_stroller,
         ]);
 
         return redirect('/layout');
@@ -131,14 +140,20 @@ class CheckoutController extends Controller
         $id_compra = session('id_compra');
 
         if (!$id_compra) {
-            return redirect('/')->with('erro', 'Por favor, informe seus dados para iniciar a compra.');
+            return redirect('/sistema')->with('erro', 'Por favor, identifique-se para iniciar seu carrinho.');
         }
 
-        $compra = Compras::with('itens.produto')->findOrFail($id_compra);
-        $nomeComprador = session('nomeComprador');
-        $pedidos = Produtos::all();
+        $compra = Compras::with(['itens.produto', 'usuario', 'stroller'])->findOrFail($id_compra);
+        $nomeComprador = session('nomeComprador', $compra->usuario->nome ?? 'Cliente');
 
-        return view('layout', compact('compra', 'nomeComprador', 'pedidos'));
+        // Sugestões de promoção para incentivo de ticket médio (Pitch Item 4)
+        $promocoes = Produtos::where('status', 'em promocao')->take(4)->get();
+        $stroller = $compra->stroller ?? SmartStroller::find(1);
+
+        $valorTotal = (float) $compra->valor_total;
+        $impostosAprox = round($valorTotal * 0.185, 2);
+
+        return view('layout', compact('compra', 'nomeComprador', 'promocoes', 'stroller', 'impostosAprox'));
     }
 
     /**
@@ -153,11 +168,21 @@ class CheckoutController extends Controller
                 'status'   => 'Concluida',
                 'data_fim' => now()
             ]);
+
+            if ($compra->stroller) {
+                $compra->stroller->update([
+                    'status'               => 'Disponivel',
+                    'ultima_sincronizacao' => now(),
+                ]);
+            }
         }
+
+        $impostosAprox = round(((float) $compra->valor_total) * 0.185, 2);
 
         session()->forget('id_compra');
         session()->forget('nomeComprador');
+        session()->forget('id_stroller');
 
-        return view('imprimir_recibo', compact('compra'));
+        return view('imprimir_recibo', compact('compra', 'impostosAprox'));
     }
 }

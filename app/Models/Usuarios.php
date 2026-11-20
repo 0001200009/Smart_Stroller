@@ -19,5 +19,12 @@ class Usuarios extends Model
         'cpf',
         'email',
         'telefone',
+        'password',
+        'is_admin',
     ];
+
+    public function compras()
+    {
+        return $this->hasMany(Compras::class, 'id_usuario', 'id_usuario');
+    }
 }
